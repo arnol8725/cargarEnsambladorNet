@@ -1,0 +1,98 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>CAPCajaLite</name>
+    </assembly>
+    <members>
+        <member name="T:CapCajaLite.ClsCaptaCajaLite">
+            <summary>
+            Definición de comportamiento de las funcionalidades para la interacción con CAJA64 BAZ
+            </summary>
+        </member>
+        <member name="P:CapCajaLite.ClsCaptaCajaLite.TipoAfectacion">
+            <summary>
+            Tipo de Afectación detonado por el proceso de depósito de cheque mixto,
+            se deposita efectivo al mismo tiempo que el cheque. Se debe enviar
+            el tipo de afectación en 17 
+            </summary>
+        </member>
+        <member name="P:CapCajaLite.ClsCaptaCajaLite.TipoAfectacionReversoPagoCheque">
+            <summary>
+            Tipo de Afectación solicitada para reverso de pago de cheque.
+            </summary>
+        </member>
+        <member name="P:CapCajaLite.ClsCaptaCajaLite.TiposPago">
+            <summary>
+            Arreglo de tipos de pago para el reverso de pago de cheque mixto. 
+            Tipo de Afectación solicitada para reverso de pago de cheque.
+            </summary>
+        </member>
+        <member name="P:CapCajaLite.ClsCaptaCajaLite.TransaccionConfirmacion">
+            <summary>
+            Propiedad específica para reversos.
+            </summary>
+        </member>
+        <member name="M:CapCajaLite.ClsCaptaCajaLite.#ctor(AdnAdmonAplC71.Clases.CtrAdmApl)">
+            <summary>
+            Constructor que llama a las funciones Crear e Iniciar
+            </summary>
+            <param name="Admin"></param>
+        </member>
+        <member name="M:CapCajaLite.ClsCaptaCajaLite.Crear">
+            <summary>
+            Funcioón Crear sobreescrita cone l 
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:CapCajaLite.ClsCaptaCajaLite.Iniciar">
+            <summary>
+            
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:CapCajaLite.ClsCaptaCajaLite.Egresar">
+            <summary>
+            Previamente se tienen que inicializar las siguientes variables:
+            Divisa, TOP, Importe, ImporteCheque, ImporteAlterno,  
+            ImporteCompraVenta, IdTransaccionADN, ConceptoMovto, 
+            Referencia
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:CapCajaLite.ClsCaptaCajaLite.FondearCaja(System.Decimal)">
+            <summary>
+            Previamente se debe inicializar la propiedad Divisa. Devolverá un booleano al finalizar. 
+            Depede del tiempo que tarde el cajero en usar el front web de Caja64 BAZ
+            </summary>
+            <param name="pdblImporte"> Importe por el cual se quiere verificar el fondeo</param>
+            <returns></returns>
+        </member>
+        <member name="M:CAPCajaLite.ExcepcionesPersonalizadas.SinDatosChequeException.#ctor">
+            <summary>
+            Crea la excepción
+            </summary>
+        </member>
+        <member name="M:CAPCajaLite.ExcepcionesPersonalizadas.SinDatosChequeException.#ctor(System.String)">
+            <summary>
+            Crea la excepción con descripción
+            </summary>
+            <param name="message">Descripción de la excepción</param>
+        </member>
+        <member name="M:CAPCajaLite.ExcepcionesPersonalizadas.SinDatosChequeException.#ctor(System.String,System.Exception)">
+            <summary>
+            Crea la excepción con descripción y una causa interna
+            </summary>
+            <param name="message">Descripción de la excepción</param>
+            <param name="innerException">Causa interna de la excepción</param>
+        </member>
+        <member name="M:CAPCajaLite.ExcepcionesPersonalizadas.SinDatosChequeException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+            Crea la excepción de datos serializados.
+            escenario habitual es cuando se produce una excepción en algún lugar de la estación de trabajo remota
+            y tenemos que volver a crear / volver a lanzar la excepción en la máquina local
+            </summary>
+            <param name="info">Información de serialization</param>
+            <param name="context">Contexto de serealización</param>
+        </member>
+    </members>
+</doc>

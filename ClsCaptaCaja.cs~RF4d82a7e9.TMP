@@ -1,0 +1,1804 @@
+﻿using System;
+using System.Configuration;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Transactions;
+using AdnAdmonAplC71.Clases;
+using System.ServiceModel;
+using System.Data;
+using System.Diagnostics;
+using System.Net;
+using System.IO;
+using CAPControlCaja.AfectacionCaja;
+using System.Web.Script.Serialization;
+using CAPControlCaja.OperacionesCheques;
+using System.Reflection;
+using System.Data.SqlClient;
+using Banco.PD3.Persistence;
+
+namespace CAPControlCaja
+{
+    /// <summary>
+    /// Definición de comportamiento de las funcionalidades para la interacción con CAJA64 BAZ
+    /// </summary>
+    public class ClsCaptaCaja : Kernell
+    {
+        #region Inicio_Instancia
+
+        /// <summary>
+        /// Constructor que llama a las funciones Crear e Iniciar
+        /// </summary>
+        /// <param name="Admin"></param>
+        public ClsCaptaCaja(CtrAdmApl Admin)
+        {
+            this.administradorAplicaciones = Admin;
+            this.Crear();
+            this.Iniciar();
+        }
+
+        /// <summary>
+        /// Funcioón Crear sobreescrita cone l 
+        /// </summary>
+        /// <returns></returns>
+        public override bool Crear()
+        {
+            try
+            {
+                nt = "";
+                if (this.administradorAplicaciones.ctrAbd.Ejecutar("SELECT et.fcWS FROM ESTAC_TRAB et WITH(NOLOCK) where LTRIM(et.fcIP) = '127.0.0.1'"))
+                {
+                    if (this.administradorAplicaciones.ctrAbd.Registros() > 0)
+                    {
+                        nt = administradorAplicaciones.ctrAbd.Dato("fcWS").ToString().Trim();
+                    }
+                    else
+                    {
+                        throw new NullReferenceException("No existe la estación de trabajo correspondiente al servidor.");
+                    }
+                }
+                else
+                {
+                    throw new Exception("No fue posible conectar con el servidor para obtener la estación de trabajo.");
+                }
+
+                //string app = AppDomain.CurrentDomain.FriendlyName.Trim();
+
+                //string ubicacionArchivoConfig = string.Concat(@"K:\DIVISAS\", app, ".config");
+
+                //if (!File.Exists(ubicacionArchivoConfig))
+                //{
+
+                //    FileStream stream = new FileStream(ubicacionArchivoConfig, FileMode.Append, FileAccess.Write);
+                //    StreamWriter writer = new StreamWriter(stream);
+                //    System.Security.Principal.WindowsIdentity user = System.Security.Principal.WindowsIdentity.GetCurrent();
+
+                //    writer.WriteLine("<?xml version=\"1.0\" encoding=\"utf-8\" ?>");
+                //    writer.WriteLine("<configuration>");
+                //    writer.WriteLine("    <system.serviceModel>");
+                //    writer.WriteLine("        <bindings>");
+                //    writer.WriteLine("            <basicHttpBinding>");
+                //    writer.WriteLine("                <binding name=\"BasicHttpBinding_ICAPAfectacionCaja\" />");
+                //    writer.WriteLine("                <binding name=\"BasicHttpBinding_IAcceso\" />");
+                //    writer.WriteLine("                <binding name=\"BasicHttpBinding_ICAPOperacionesCheques\" />");
+                //    writer.WriteLine("            </basicHttpBinding>");
+                //    writer.WriteLine("        </bindings>");
+                //    writer.WriteLine("        <client>");
+                //    writer.WriteLine(string.Concat("            <endpoint address=\"http://", nt, ":9002/ADNCaptacion/Kernell/CAPAfectacionCaja.svc\""));
+                //    writer.WriteLine("                binding=\"basicHttpBinding\" bindingConfiguration=\"BasicHttpBinding_ICAPAfectacionCaja\"");
+                //    writer.WriteLine("                contract=\"AfectacionCaja.ICAPAfectacionCaja\" name=\"BasicHttpBinding_ICAPAfectacionCaja\" />");
+                //    writer.WriteLine(string.Concat("            <endpoint address=\"http://", nt, "/BazCajaFront/Servicios/AccesoCaja/CjCRProxyAcceso.svc\""));
+                //    writer.WriteLine("                binding=\"basicHttpBinding\" bindingConfiguration=\"BasicHttpBinding_IAcceso\"");
+                //    writer.WriteLine("                contract=\"SolicitaAcceso.IAcceso\" name=\"BasicHttpBinding_IAcceso\" />");
+                //    writer.WriteLine(string.Concat("            <endpoint address=\"http://", nt, ":9002/ADNCaptacion/Kernell/CAPOperacionesCheques.svc\""));
+                //    writer.WriteLine("                binding=\"basicHttpBinding\" bindingConfiguration=\"BasicHttpBinding_ICAPOperacionesCheques\"");
+                //    writer.WriteLine("                contract=\"OperacionesCheques.ICAPOperacionesCheques\" name=\"BasicHttpBinding_ICAPOperacionesCheques\" />");
+                //    writer.WriteLine("        </client>");
+                //    writer.WriteLine("      <behaviors>");
+                //    writer.WriteLine("        <endpointBehaviors>");
+                //    writer.WriteLine("          <behavior name=\"Service1Behavior\">");
+                //    writer.WriteLine("            <callbackDebug includeExceptionDetailInFaults=\"true\"/>");
+                //    writer.WriteLine("          </behavior>");
+                //    writer.WriteLine("       </endpointBehaviors>");
+                //    writer.WriteLine("      </behaviors>");
+                //    writer.WriteLine("    </system.serviceModel>");
+                //    writer.WriteLine("</configuration>");
+                //    writer.Close();
+                //}
+
+                afecta_Servicio_Componente = false;
+
+
+
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public override bool Iniciar()
+        {
+            try
+            {
+                this.administradorAplicaciones.ctrBitacora.GuardarEnLog("Iniciar()");
+
+                this.administradorAplicaciones.ctrBitacora.GuardarEnLog("Iniciando propiedades de la Regla de Negocio");
+
+                this.administradorAplicaciones.ctrBitacora.GuardarEnLog("Inicializa el EsDivisa en False");
+                Esdivisa = false;
+                TipoDivisa = 0;
+                this.administradorAplicaciones.ctrBitacora.GuardarEnLog("Inicializa valores de importe");
+                ImporteCheque = 0;
+                Importe = 0;
+                ImporteCompraVenta = 0;
+                IdTransaccionAnularADN = 0;
+                //esquemaAfectacion = Convert.ToBoolean(this.administradorAplicaciones.ctrParametro.Obtener(4092));
+
+                //if (esquemaAfectacion)
+                //{
+                //    this.CargaComponentesCaja();
+                //}
+                return true;
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        #endregion
+
+        #region Propiedades Públicas
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public int IdTransaccionADN;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public int gnPresupuesto;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public short RespuestaCajaNoError;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool Anular_Efectivo;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool Anular_Cheques;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public int IdTransaccionAnularADN;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public string Referencia;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public string Divisa;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public Decimal Importe;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public Decimal ImporteCheque;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public Decimal ImporteAlterno;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public Decimal ImporteCompraVenta;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public string RespuestaCaja
+        {
+            get { return respuestaCaja; }
+            set { respuestaCaja = value; }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public string ConceptoMovto
+        {
+            get
+            {
+                return this.ConcepMov;
+            }
+
+            set
+            {
+                this.ConcepMov = value;
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public Decimal ImporteTotalCheques
+        {
+            private get
+            {
+                return this.litotchq;
+            }
+            set
+            {
+                this.litotchq = value;
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public Decimal SaldoCajero
+        {
+            get
+            {
+                //Caja.Esdivisa = Esdivisa;
+                //Caja.TipoDivisa = TipoDivisa;
+                //ldblSaldoCajero = Caja.lcurSaldoCajero;
+                return ldblSaldoCajero;
+            }
+
+            set
+            {
+                ldblSaldoCajero = value;
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public short TOP
+        {
+            get { return TipodeOperacion; }
+            set { TipodeOperacion = value; }
+        }
+
+        public short TipoPago
+        {
+            get { return this.IdTipoPago; }
+            set { this.IdTipoPago = value; }
+        }
+
+        public string Sesion
+        {
+            get
+            {
+                return sesion;
+            }
+
+            set
+            {
+                sesion = value;
+            }
+        }
+
+        public string Aplicacion
+        {
+            get
+            {
+                return aplicacion;
+            }
+
+            set
+            {
+                aplicacion = value;
+            }
+        }
+
+        public bool Afecta_Servicio_Componente
+        {
+            private get
+            {
+                return afecta_Servicio_Componente;
+            }
+
+            set
+            {
+                afecta_Servicio_Componente = value;
+            }
+        }
+
+        public TopsAfectacion[] TopsAfectacion
+        {
+            private get { return topsAfectacion; }
+            set { topsAfectacion = value; }
+        }
+
+        #endregion
+
+        #region Propiedades Privadas
+
+        private short TipodeOperacion;
+        private string DivisaAlterna;
+        private string NumeroDeCheque;
+        private string NumeroDeCuentaCheque;
+        private Decimal lcurSaldoCajero;
+        private Decimal ldblSaldoCajero;
+        private bool Esdivisa;
+        private short TipoDivisa;
+        private bool EnviarChequeRechazado;
+        private bool SimulaOperacion;
+        private short IdTipoPago;
+        private CtrAdmApl administradorAplicaciones;
+        private string nt;
+        private string respuestaCaja;
+        private string ConcepMov;
+        private Decimal litotchq;
+        private string sesion;
+        private string aplicacion;
+        private bool esquemaAfectacion;
+        private readonly IDictionary<string, Assembly> agregados = new Dictionary<string, Assembly>();
+        private bool afecta_Servicio_Componente;
+        private TopsAfectacion[] topsAfectacion;
+        private enum eTipoDivisa
+        {
+            eMXP = 1,
+            eUSD = 2,
+            eOLP = 3,
+            eGTQ = 4,
+            eCAD = 5,
+            eGBP = 6,
+            eEUR = 7,
+            eC01 = 8
+        }
+
+        #endregion
+
+        #region Métodos Públicos
+
+        /// <summary>
+        /// Previamente se tienen que inicializar las siguientes variables:
+        /// Divisa, TOP, Importe, ImporteCheque, ImporteAlterno,  
+        /// ImporteCompraVenta, IdTransaccionADN, ConceptoMovto, 
+        /// Referencia
+        /// </summary>
+        /// <returns></returns>
+        public bool Ingresar()
+        {
+            try
+            {
+                bool respuesta = false;
+
+                if (afecta_Servicio_Componente)
+                {
+                    this.administradorAplicaciones.ctrBitacora.GuardarEnLog("Ingresando a la intancia del servicio de Caja.");
+                    ConfigurarDivisaDeCaja();
+                    Decimal Importe_Total = Convert.ToDecimal(Importe) + Convert.ToDecimal(ImporteCheque);
+                    this.administradorAplicaciones.ctrBitacora.GuardarEnLog("Inicia Instacia del servicio puente.");
+                    ObjetoAfectacionCaja reqAfectacion = new ObjetoAfectacionCaja();
+                    if (Importe_Total > 0)
+                    {
+                        this.administradorAplicaciones.ctrBitacora.GuardarEnLog("Se llenan los datos para la petición al servicio.");
+
+                        reqAfectacion.TipoMovimiento = 1;//Ingreso.1, Egreso.2
+                        reqAfectacion.Concepto = Convert.ToInt32(ConcepMov);
+                        reqAfectacion.Divisa = TipoDivisa;
+                        reqAfectacion.Empleado = administradorAplicaciones.ctrSesion.IDUsuario;
+                        reqAfectacion.Importe = Importe_Total;
+                        reqAfectacion.ImporteEfectivo = Convert.ToDecimal(Importe);
+                        reqAfectacion.Pedido = 0;
+                        reqAfectacion.Presupuesto = 0;
+                        reqAfectacion.Referencia = Referencia;
+                        reqAfectacion.TipoAfectacion = 1;
+                        reqAfectacion.Top = TipodeOperacion;
+                        reqAfectacion.Transaccion = IdTransaccionADN;
+                        reqAfectacion.Ws = administradorAplicaciones.ctrSesion.IDEstacionTrabajo;
+                        reqAfectacion.TopEgreso = 0;
+                        reqAfectacion.Sesion = this.sesion;
+                        reqAfectacion.Aplicacion = this.Aplicacion;
+                        reqAfectacion.TopsAfectacion = topsAfectacion;
+
+                        this.administradorAplicaciones.ctrBitacora.GuardarEnLog("http://" + this.administradorAplicaciones.ctrSesion.Servidor + ":9002/ADNCaptacion/Kernell/CAPAfectacionCaja.svc");
+                        CAPAfectacionCajaClient caja64Service = new CAPAfectacionCajaClient("BasicHttpBinding_ICAPAfectacionCaja", "http://" + this.administradorAplicaciones.ctrSesion.Servidor + ":9002/ADNCaptacion/Kernell/CAPAfectacionCaja.svc");
+
+                        this.administradorAplicaciones.ctrBitacora.GuardarEnLog("Se envía la petición al servicio.");
+                        RespuestaAfectacionCaja respuestaCaja = new RespuestaAfectacionCaja();
+
+                        respuestaCaja = caja64Service.AfectarCaja(reqAfectacion);
+
+                        if (respuestaCaja.NoError != 0)
+                        {
+                            RespuestaCajaNoError = respuestaCaja.NoError;
+                            RespuestaCaja = respuestaCaja.Descripcion;
+                            this.administradorAplicaciones.ctrBitacora.GuardarEnLog("Respuesta incorrecta del servicio de caja. Algo no anda bien.");
+                        }
+                        else
+                        {
+                            RespuestaCajaNoError = respuestaCaja.NoError;
+                            RespuestaCaja = respuestaCaja.Descripcion;
+                            this.administradorAplicaciones.ctrBitacora.GuardarEnLog("Afectación exitosa.");
+                            respuesta = true;
+                        }
+                    }
+                }
+                else
+                {
+                    //////////////////////////
+                    ////////////////////// Ah, si bueno, empezar aquí mañana 25/05/2018.
+                    //////////////////////////
+
+                    //////////////////////long transaccion = 0;
+
+                    ////////////////////AdnAdmonLite.Clases.CtrAdmApl admonLite = new AdnAdmonLite.Clases.CtrAdmApl();
+
+                    ////////////////////admonLite.Ejecutar(this.administradorAplicaciones.ctrSesion.IDUsuario, AdnAdmonLite.Clases.CtrAbd.eInterface.ePD3);
+
+                    ////////////////////admonLite.ctrBitacora.GuardarLog = true;
+
+                    //////////////////////List<SqlParameter> listaParametros = new List<SqlParameter>();
+
+                    //////////////////////listaParametros.Add(new SqlParameter("@pcTranWS",this.administradorAplicaciones.ctrSesion.IDEstacionTrabajo));
+                    //////////////////////listaParametros.Add(new SqlParameter("@pcTranUsr",this.administradorAplicaciones.ctrSesion.IDUsuario));
+                    //////////////////////listaParametros.Add(new SqlParameter("@pcTranTipo",this.administradorAplicaciones.ctrTransaccion.Tipo));
+
+                    //////////////////////DataSet dsGuardar = new DataSet("GuardaTrans");
+
+                    //////////////////////dsGuardar = admonLite.ctrAbd.EjecutarSP("spBDInsTransac",listaParametros);
+
+                    //////////////////////long.TryParse(dsGuardar.Tables[0].Rows[0][0].ToString(), out transaccion);
+
+                    //////////////////////if (transaccion != 0)
+                    //////////////////////{
+                    ////////////////////this.administradorAplicaciones.ctrBitacora.GuardarEnLog("Ingresando a la afectación de caja con componente. (Ingreso)");
+                    ////////////////////Baz.Caja.Afectacion.Caja caja = new Baz.Caja.Afectacion.Caja();
+                    ////////////////////ConfigurarDivisaDeCaja();
+                    ////////////////////Decimal Importe_Total = Convert.ToDecimal(Importe) + Convert.ToDecimal(ImporteCheque);
+                    ////////////////////this.administradorAplicaciones.ctrBitacora.GuardarEnLog("Inicia Instacia del componente.");
+                    ////////////////////TransactionalManager transactionManager = admonLite.ctrAbd.GetTransManager();
+                    ////////////////////if (Importe_Total > 0)
+                    ////////////////////{
+                    ////////////////////    caja.tipoMovimiento = 1;//Ingreso.1, Egreso.2
+                    ////////////////////    caja.concepto = Convert.ToInt32(ConcepMov);
+                    ////////////////////    caja.Divisa = TipoDivisa;
+                    ////////////////////    caja.numeroEmpleado = administradorAplicaciones.ctrSesion.IDUsuario;
+                    ////////////////////    caja.importeTotalOperacion = Importe_Total;
+                    ////////////////////    caja.importeEfectivo = Convert.ToDecimal(Importe);
+                    ////////////////////    caja.pedido = 0;
+                    ////////////////////    caja.presupuesto = 0;
+                    ////////////////////    caja.referencia = Referencia;
+                    ////////////////////    caja.tipoAfectacion = 1;
+                    ////////////////////    caja.tipoOperacion = TipodeOperacion;
+                    ////////////////////    caja.transaccion = IdTransaccionADN;
+                    ////////////////////    caja.terminal = administradorAplicaciones.ctrSesion.IDEstacionTrabajo;
+                    ////////////////////    caja.conexion = transactionManager;
+                    ////////////////////    this.administradorAplicaciones.ctrBitacora.GuardarEnLog("Ejecuta afectación.");
+                    ////////////////////    caja.RealizaAfectacion();
+
+                    ////////////////////    if (caja.NoError != 0)
+                    ////////////////////    {
+                    ////////////////////        transactionManager.RollBack();
+                    ////////////////////        RespuestaCajaNoError = (short)caja.NoError;
+                    ////////////////////        RespuestaCaja = caja.DescipcionError;
+                    ////////////////////        this.administradorAplicaciones.ctrBitacora.GuardarEnLog("Ocurrió un error con la afectación en caja. Algo no anda bien.");
+                    ////////////////////        this.administradorAplicaciones.ctrBitacora.GuardarEnLog(string.Concat("El componente de caja responde con el error: ", caja.NoError, " desc: ", caja.DescipcionError));
+                    ////////////////////    }
+                    ////////////////////    else
+                    ////////////////////    {
+                    ////////////////////        transactionManager.Commit();
+                    ////////////////////        RespuestaCajaNoError = (short)caja.NoError;
+                    ////////////////////        RespuestaCaja = caja.DescipcionError;
+                    ////////////////////        this.administradorAplicaciones.ctrBitacora.GuardarEnLog("Afectación exitosa.");
+                    ////////////////////        respuesta = true;
+                    ////////////////////    }
+                    ////////////////////}
+                    //////////////////////}
+                    //////////////////////else
+                    //////////////////////{
+                    //////////////////////    throw new Exception("No fue posible obtener una transacción.");
+                    //////////////////////}
+                }
+
+                return respuesta;
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+        //public bool IngresarPD3()
+        //{
+        //    bool respuesta = false;
+        //    try
+        //    {
+        //        this.administradorAplicaciones.ctrBitacora.GuardarEnLog("Ingresando a la afectación de caja con componente. (Ingreso)");
+        //        Baz.Caja.Afectacion.Caja caja = new Baz.Caja.Afectacion.Caja();
+        //        ConfigurarDivisaDeCaja();
+        //        Decimal Importe_Total = Convert.ToDecimal(Importe) + Convert.ToDecimal(ImporteCheque);
+        //        this.administradorAplicaciones.ctrBitacora.GuardarEnLog("Inicia Instacia del componente.");
+        //        if (Importe_Total > 0)
+        //        {
+        //            caja.tipoMovimiento = 1;//Ingreso.1, Egreso.2
+        //            caja.concepto = Convert.ToInt32(ConcepMov);
+        //            caja.Divisa = TipoDivisa;
+        //            caja.numeroEmpleado = administradorAplicaciones.ctrSesion.IDUsuario;
+        //            caja.importeTotalOperacion = Importe_Total;
+        //            caja.importeEfectivo = Convert.ToDecimal(Importe);
+        //            caja.pedido = 0;
+        //            caja.presupuesto = 0;
+        //            caja.referencia = Referencia;
+        //            caja.tipoAfectacion = 1;
+        //            caja.tipoOperacion = TipodeOperacion;
+        //            caja.transaccion = IdTransaccionADN;
+        //            caja.terminal = administradorAplicaciones.ctrSesion.IDEstacionTrabajo;
+        //            this.administradorAplicaciones.ctrBitacora.GuardarEnLog("Ejecuta afectación.");
+        //            caja.RealizaAfectacion();
+
+        //            if (caja.NoError != 0)
+        //            {
+        //                RespuestaCajaNoError = (short)caja.NoError;
+        //                RespuestaCaja = caja.DescipcionError;
+        //                this.administradorAplicaciones.ctrBitacora.GuardarEnLog("Ocurrió un error con la afectación en caja. Algo no anda bien.");
+        //                this.administradorAplicaciones.ctrBitacora.GuardarEnLog(string.Concat("El componente de caja responde con el error: ", caja.NoError, " desc: ", caja.DescipcionError));
+        //            }
+        //            else
+        //            {
+        //                RespuestaCajaNoError = (short)caja.NoError;
+        //                RespuestaCaja = caja.DescipcionError;
+        //                this.administradorAplicaciones.ctrBitacora.GuardarEnLog("Afectación exitosa.");
+        //                respuesta = true;
+        //            }
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        throw;
+        //    }
+        //    return respuesta;
+        //}
+
+        /// <summary>
+        /// Previamente se tienen que inicializar las siguientes variables:
+        /// Divisa, TOP, Importe, ImporteCheque, ImporteAlterno,  
+        /// ImporteCompraVenta, IdTransaccionADN, ConceptoMovto, 
+        /// Referencia
+        /// </summary>
+        /// <returns></returns>
+        public bool Egresar()
+        {
+            try
+            {
+                bool respuesta = false;
+                if (!esquemaAfectacion)
+                {
+                    this.administradorAplicaciones.ctrBitacora.GuardarEnLog("Egresar()");
+                    this.administradorAplicaciones.ctrBitacora.GuardarEnLog("Ingresando a la intancia del servicio de Caja.");
+                    ConfigurarDivisaDeCaja();
+                    Decimal Importe_Total = Convert.ToDecimal(Importe) + Convert.ToDecimal(ImporteCheque);
+
+                    if (IdTransaccionAnularADN > 0)
+                    {
+                        //Caja.plTranNoAnula = IdTransaccionAnularADN;
+                        if (ImporteCheque > 0)
+                        {
+                            //System.Windows.Forms.Application.DoEvents();
+                            //Caja.Anular_Efectivo = false;
+
+
+                            /////// Anular_Efectivo = false;
+
+
+                            //Caja.Anular_Cheques = true;
+
+
+                            /////// Anular_Cheques = true;
+
+
+                        }
+                    }
+
+                    ObjetoAfectacionCaja reqAfectacion = new ObjetoAfectacionCaja();
+
+                    if (Importe_Total > 0)
+                    {
+
+                        this.administradorAplicaciones.ctrBitacora.GuardarEnLog("Ejecuta el método del servicio de caja para hacer el egreso.");
+
+                        reqAfectacion.TipoMovimiento = 2;//Egreso
+                        reqAfectacion.Concepto = Convert.ToInt32(ConcepMov);
+                        reqAfectacion.Divisa = TipoDivisa;
+                        reqAfectacion.Empleado = administradorAplicaciones.ctrSesion.IDUsuario;
+                        reqAfectacion.Importe = Importe_Total;
+                        reqAfectacion.ImporteEfectivo = Convert.ToDecimal(Importe);
+                        reqAfectacion.Pedido = 0;//1,
+                        reqAfectacion.Presupuesto = 0;//gnPresupuesto,
+                        reqAfectacion.Referencia = Referencia;
+                        reqAfectacion.TipoAfectacion = 1;
+                        reqAfectacion.Top = TipodeOperacion;
+                        reqAfectacion.Transaccion = IdTransaccionADN;
+                        reqAfectacion.Ws = administradorAplicaciones.ctrSesion.IDEstacionTrabajo;
+                        reqAfectacion.TopEgreso = 0;
+
+                        CAPAfectacionCajaClient caja64Service = new CAPAfectacionCajaClient();
+
+                        RespuestaAfectacionCaja respuestaCaja = new RespuestaAfectacionCaja();
+
+                        respuestaCaja = caja64Service.AfectarCaja(reqAfectacion);
+
+                        if (respuestaCaja.NoError != 0)
+                        {
+                            RespuestaCajaNoError = respuestaCaja.NoError;
+                            RespuestaCaja = respuestaCaja.Descripcion;
+                            this.administradorAplicaciones.ctrBitacora.GuardarEnLog("Respuesta incorrecta del servicio de caja. Algo no anda bien.");
+                        }
+                        else
+                        {
+                            RespuestaCajaNoError = respuestaCaja.NoError;
+                            RespuestaCaja = respuestaCaja.Descripcion;
+                            this.administradorAplicaciones.ctrBitacora.GuardarEnLog("Afectación exitosa.");
+                            respuesta = true;
+                        }
+                    }
+                }
+                else
+                {
+                    this.administradorAplicaciones.ctrBitacora.GuardarEnLog("Egresar()");
+                    this.administradorAplicaciones.ctrBitacora.GuardarEnLog("Ingresando a la afectación de caja con componente. (Egreso)");
+                    Baz.Caja.Afectacion.Caja caja = new Baz.Caja.Afectacion.Caja();
+                    ConfigurarDivisaDeCaja();
+                    Decimal Importe_Total = Convert.ToDecimal(Importe) + Convert.ToDecimal(ImporteCheque);
+
+                    if (IdTransaccionAnularADN > 0)
+                    {
+                        //Caja.plTranNoAnula = IdTransaccionAnularADN;
+                        if (ImporteCheque > 0)
+                        {
+                            //System.Windows.Forms.Application.DoEvents();
+                            //Caja.Anular_Efectivo = false;
+
+
+                            /////// Anular_Efectivo = false;
+
+
+                            //Caja.Anular_Cheques = true;
+
+
+                            /////// Anular_Cheques = true;
+
+
+                        }
+                    }
+                    if (Importe_Total > 0)
+                    {
+                        caja.tipoMovimiento = 2;//Egreso
+                        caja.concepto = Convert.ToInt32(ConcepMov);
+                        caja.Divisa = TipoDivisa;
+                        caja.numeroEmpleado = administradorAplicaciones.ctrSesion.IDUsuario;
+                        caja.importeTotalOperacion = Importe_Total;
+                        caja.importeEfectivo = Convert.ToDecimal(Importe);
+                        caja.pedido = 0;//1,
+                        caja.presupuesto = 0;//gnPresupuesto,
+                        caja.referencia = Referencia;
+                        caja.tipoAfectacion = 1;
+                        caja.tipoOperacion = TipodeOperacion;
+                        caja.transaccion = IdTransaccionADN;
+                        caja.terminal = administradorAplicaciones.ctrSesion.IDEstacionTrabajo;
+                        caja.RealizaAfectacion();
+
+                        if (caja.NoError != 0)
+                        {
+                            RespuestaCajaNoError = (short)caja.NoError;
+                            RespuestaCaja = caja.DescipcionError;
+                            this.administradorAplicaciones.ctrBitacora.GuardarEnLog("Ocurrió un error con la afectación en caja. Algo no anda bien.");
+                        }
+                        else
+                        {
+                            RespuestaCajaNoError = (short)caja.NoError;
+                            RespuestaCaja = caja.DescipcionError;
+                            this.administradorAplicaciones.ctrBitacora.GuardarEnLog("Afectación exitosa.");
+                            respuesta = true;
+                        }
+                    }
+                }
+                //this.administradorAplicaciones.ctrBitacora.GuardarEnLog("Realiza la compra venta de dolares");
+                //if (ImporteCompraVenta > 0)
+                //{
+                //    //RegistraCompraUSD(155, 156);
+                //}
+
+                //if ((ImporteAlterno > 0) & (DivisaAlterna != ""))
+                //{
+                //    TipoDivisa = 1;
+                //    Esdivisa = false;
+
+                //    this.administradorAplicaciones.ctrBitacora.GuardarEnLog("Ejecuta el metodo de CAJA.RegistraMovtoCaja para Egreso Alterno");
+
+                //    reqAfectacion = new ObjetoAfectacionCaja();
+
+                //    reqAfectacion.TipoMovimiento = 2;//Egreso
+                //    reqAfectacion.Concepto = Convert.ToInt32(ConcepMov);
+                //    reqAfectacion.Divisa = TipoDivisa;
+                //    reqAfectacion.Empleado = administradorAplicaciones.ctrSesion.IDUsuario;
+                //    reqAfectacion.Importe = Importe_Total;
+                //    reqAfectacion.ImporteEfectivo = Convert.ToDecimal(Importe);
+                //    reqAfectacion.Pedido = 0;//1,
+                //    reqAfectacion.Presupuesto = 0;//gnPresupuesto,
+                //    reqAfectacion.Referencia = Referencia;
+                //    reqAfectacion.TipoAfectacion = 1;
+                //    reqAfectacion.Top = TipodeOperacion;
+                //    reqAfectacion.Transaccion = IdTransaccionADN;
+                //    reqAfectacion.Ws = administradorAplicaciones.ctrSesion.IDEstacionTrabajo;
+                //    reqAfectacion.TopEgreso = 0;
+
+                //    CAPAfectacionCajaClient caja64Service = new CAPAfectacionCajaClient();
+
+                //    RespuestaAfectacionCaja respuestaCaja = new RespuestaAfectacionCaja();
+
+                //    respuestaCaja = caja64Service.AfectarCaja(reqAfectacion);
+
+                //    if (respuestaCaja.NoError != 0)
+                //    {
+                //        RespuestaCajaNoError = respuestaCaja.NoError;
+                //        RespuestaCaja = respuestaCaja.Descripcion;
+                //        this.administradorAplicaciones.ctrBitacora.GuardarEnLog("Respuesta correcta del servicio de caja.");
+                //    }
+                //    else
+                //    {
+                //        RespuestaCajaNoError = respuestaCaja.NoError;
+                //        RespuestaCaja = respuestaCaja.Descripcion;
+                //        this.administradorAplicaciones.ctrBitacora.GuardarEnLog("Afectación exitosa.");
+                //        respuesta = true;
+                //    }
+                //}
+                return respuesta;
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public void ConfigurarDivisaDeCaja()
+        {
+            if (!String.IsNullOrEmpty(Divisa))
+            {
+                switch (Divisa)
+                {
+                    case "MXP": // Divisa Local                
+                        TipoDivisa = (short)eTipoDivisa.eMXP;
+                        Esdivisa = false;
+                        break;
+                    case "USD": // Divisa Extranjera                
+                        TipoDivisa = (short)eTipoDivisa.eUSD;
+                        Esdivisa = true;
+                        break;
+                    case "OLP": //OnzaPlata                
+                        TipoDivisa = (short)eTipoDivisa.eOLP;
+                        Esdivisa = true;
+                        break;
+                    case "GTQ": //Quetzales                
+                        TipoDivisa = (short)eTipoDivisa.eGTQ;
+                        Esdivisa = true;
+                        break;
+                    case "CAD": //Dolar Canadiense                
+                        TipoDivisa = (short)eTipoDivisa.eCAD;
+                        Esdivisa = true;
+                        break;
+                    case "GBP": //Libras Esterlinas                
+                        TipoDivisa = (short)eTipoDivisa.eGBP;
+                        Esdivisa = true;
+                        break;
+                    case "EUR": //Euros                
+                        TipoDivisa = (short)eTipoDivisa.eEUR;
+                        Esdivisa = true;
+                        break;
+                    case "C01": //Centenarios                
+                        TipoDivisa = (short)eTipoDivisa.eC01;
+                        Esdivisa = true;
+                        break;
+                    default:
+                        throw new ArgumentException("Indique una Divisa válida.");
+                        break;
+                }
+            }
+            else
+            {
+                throw new ArgumentNullException("La propiedad Divisa no puede ser nula.");
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="pIntTop1"></param>
+        /// <param name="pIntTop2"></param>
+        /// <returns></returns>
+        public bool RegistraCompraUSD(short pIntTop1, short pIntTop2)
+        {
+            try
+            {
+                this.administradorAplicaciones.ctrBitacora.GuardarEnLog("RegistraCompraUSD()");
+                //RegistraCompraUSD = false;
+                this.administradorAplicaciones.ctrBitacora.GuardarEnLog("Asigna valores a Caja");
+                TipoDivisa = 2;
+                Esdivisa = true;
+                //Caja.Importe_Efectivo = Convert.ToDecimal(ImporteCompraVenta);
+                //Caja.Importe_Total = Convert.ToDecimal(ImporteCompraVenta);
+                //Caja.TipoOperacion = pIntTop1;
+                TipodeOperacion = pIntTop1;
+                this.administradorAplicaciones.ctrBitacora.GuardarEnLog("Ejecuta el metodo Caja.RegistraMovtoCaja para el top " + pIntTop1);
+
+                //Colocar Afectación en Caja 1
+
+                this.administradorAplicaciones.ctrBitacora.GuardarEnLog("Ejecuta el metodo Caja.RegistraMovtoCaja para el top " + pIntTop2);
+                //Caja.TipoOperacion = pIntTop2;
+                TipodeOperacion = pIntTop2;
+
+                //Colocar afectación en caja 2
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public bool LimpiarChequesCapturados()
+        {
+            try
+            {
+
+                throw new NotImplementedException("No se ha desarrollado la parte final de caja para cheques.");
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="pobjConciliador"></param>
+        /// <returns></returns>
+        public bool VerificarChequesRechazados(ref object pobjConciliador)
+        {
+            try
+            {
+                throw new NotImplementedException("No se ha desarrollado la parte final de caja para cheques.");
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="pobjCheque"></param>
+        /// <param name="pobjConciliador"></param>
+        /// <returns></returns>
+        public bool AsignarValoresChequeRechazado(ref object pobjCheque, ref object pobjConciliador)
+        {
+            try
+            {
+                throw new NotImplementedException("No se ha desarrollado la parte final de caja para cheques.");
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public ObjetoRespuestaCajaCheque MostrarCapturaCheques(decimal ImpTotal, string Ref, short TMovto, int TOP, decimal Presupuesto, short TipoVenta, string IdSesion, int Concepto, string NombreApp, bool EsDeposito)
+        {
+            try
+            {
+
+                Process navFireFoxPersonalizado = new Process();
+                ObjetoRespuestaCajaCheque respuestaOperacionCajaCheque = new ObjetoRespuestaCajaCheque();
+                short navPersoParamPlatinum = Convert.ToInt16(administradorAplicaciones.ctrParametro.Obtener(3925).ToString());
+                string strNavFireFoxPersonalizado = administradorAplicaciones.ctrParametro.Obtener(3926).ToString();
+                string urlCheques = string.Concat(administradorAplicaciones.ctrParametro.Obtener(4088).ToString(), administradorAplicaciones.ctrParametro.Obtener(4089).ToString());
+                string url = string.Concat(urlCheques.Replace("|SERVER|", nt),
+                                           EsDeposito ? "" : "ImpTotal=", EsDeposito ? "" : !string.IsNullOrEmpty(ImpTotal.ToString()) ? ImpTotal.ToString() : "0",
+                                           "&NoEmpleado=", this.administradorAplicaciones.ctrSesion.IDUsuario,
+                                           "&Ref=", !string.IsNullOrEmpty(Ref) ? Ref : "",
+                                           "&TMovto=", !string.IsNullOrEmpty(TMovto.ToString()) ? TMovto.ToString() : "1",
+                                           "&TOP=", !string.IsNullOrEmpty(TOP.ToString()) ? TOP.ToString() : "1",
+                                           "&WS=", this.administradorAplicaciones.ctrSesion.IDEstacionTrabajo,
+                                           "&Presupuesto=", !string.IsNullOrEmpty(Presupuesto.ToString()) ? Presupuesto.ToString() : "0",
+                                           "&TipoVenta=", !string.IsNullOrEmpty(TipoVenta.ToString()) ? TipoVenta.ToString() : "1",
+                                           "&IdSesion=", !string.IsNullOrEmpty(IdSesion) ? IdSesion : "",
+                                           "&Concepto=", !string.IsNullOrEmpty(Concepto.ToString()) ? Concepto.ToString() : "632",
+                                           "&NombreApp=", !string.IsNullOrEmpty(NombreApp.ToString()) ? NombreApp.ToString() : string.Concat("Captación.Default"),
+                                           EsDeposito ? "&EsDeposito=" : "", EsDeposito ? "true" : ""
+                                          );
+
+                navFireFoxPersonalizado.StartInfo.FileName = strNavFireFoxPersonalizado;
+                navFireFoxPersonalizado.StartInfo.Arguments = string.Concat(administradorAplicaciones.ctrSesion.IDUsuario, ",", administradorAplicaciones.ctrSesion.Password, ",", url);
+                navFireFoxPersonalizado.Start();
+
+                navFireFoxPersonalizado.WaitForExit();
+
+                if (navFireFoxPersonalizado.HasExited)
+                {
+                    respuestaOperacionCajaCheque = ValidaRespuestaOperacionesChueques(IdSesion);
+
+                    if (!respuestaOperacionCajaCheque.EstatusExito)
+                    {
+                        throw new InvalidDataException(string.Concat("No fue posible recuperar los datos de las sesión: ", IdSesion));
+                    }
+                }
+
+                return respuestaOperacionCajaCheque;
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        public bool GuardaChequeDevuelto(string banda, string cuenta, decimal importe, string descripcion)
+        {
+            try
+            {
+                string url = String.Concat("http://", nt, ":9014/Caja/Servicios/RechazoCheque/Cheques.svc/ChequesDevolucion/GuardaDevolucionCheque"); //this.administradorAplicaciones.ctrParametro.Obtener(2886).ToString().Trim();
+
+                HttpWebRequest req = WebRequest.Create(url) as HttpWebRequest;
+                req.KeepAlive = false;
+                req.Method = "POST";
+                req.AllowAutoRedirect = true;
+                req.Timeout = 5000;
+                req.PreAuthenticate = true;
+                req.Credentials = CredentialCache.DefaultCredentials;
+
+                string JSON = this.ChequeDevueltoJSONstr(banda, cuenta, importe, descripcion);
+
+                byte[] buffer = Encoding.ASCII.GetBytes(JSON);
+                req.ContentLength = buffer.Length;
+                req.ContentType = "application/json;charset=UTF-8";
+                Stream PostData = req.GetRequestStream();
+                PostData.Write(buffer, 0, buffer.Length);
+                PostData.Close();
+
+                HttpWebResponse resp = req.GetResponse() as HttpWebResponse;
+
+                Stream stream = resp.GetResponseStream();
+
+                Encoding encoding = System.Text.Encoding.GetEncoding("utf-8");
+
+                StreamReader streamReader = new StreamReader(stream, encoding);
+
+                string result = streamReader.ReadToEnd();
+
+                streamReader.Close();
+                resp.Close();
+
+                ResponseChequeDevuelto response = new ResponseChequeDevuelto();
+                response = this.responseChequeDevueltoJSONstr(result);
+
+                if (response.NoError != 0)
+                {
+
+                    this.administradorAplicaciones.ctrBitacora.GuardarEnLog(string.Concat("El gurado respondó con el error: ", response.Descripcion));
+                    throw new Exception(response.Descripcion);
+                }
+                else
+                    return true;
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        public ObjetoRespuestaCajaCheque MostrarDevolucionCheques(string IdSesion, string Banda, string cuenta, decimal ImpTotal, string status, string NombreApp)
+        {
+            try
+            {
+                this.administradorAplicaciones.ctrBitacora.GuardarLog = true;
+                Process navFireFoxPersonalizado = new Process();
+                ObjetoRespuestaCajaCheque respuestaOperacionCajaCheque = new ObjetoRespuestaCajaCheque();
+                short navPersoParamPlatinum = Convert.ToInt16(administradorAplicaciones.ctrParametro.Obtener(3925).ToString());
+                this.administradorAplicaciones.ctrBitacora.GuardarEnLog(navPersoParamPlatinum.ToString());
+                string strNavFireFoxPersonalizado = administradorAplicaciones.ctrParametro.Obtener(3926).ToString();
+                this.administradorAplicaciones.ctrBitacora.GuardarEnLog(strNavFireFoxPersonalizado.ToString());
+                string urlDevolucionCheques = string.Concat(administradorAplicaciones.ctrParametro.Obtener(4090).ToString(), administradorAplicaciones.ctrParametro.Obtener(4091).ToString());
+                this.administradorAplicaciones.ctrBitacora.GuardarEnLog(urlDevolucionCheques.ToString());
+                DateTime dateTime = DateTime.Now;
+                string url = string.Concat(urlDevolucionCheques.Replace("|SERVER|", nt),
+                                           "NoEmpleado=", this.administradorAplicaciones.ctrSesion.IDUsuario,
+                                           "&WS=", this.administradorAplicaciones.ctrSesion.IDEstacionTrabajo,
+                                           "&IdSesion=", !string.IsNullOrEmpty(IdSesion) ? IdSesion : string.Concat("Cfaf~pt9a_", dateTime.Day.ToString(), dateTime.Month.ToString(), dateTime.Year.ToString("yyyy"), dateTime.Hour.ToString("HH"), dateTime.Minute.ToString(), dateTime.Second.ToString(), this.administradorAplicaciones.ctrSesion.IDEstacionTrabajo),
+                                           "&Banda=", !string.IsNullOrEmpty(Banda) ? Banda : "",
+                                           "&Cuenta=", !string.IsNullOrEmpty(cuenta) ? cuenta : "1",
+                                           "&ImpTotal=", !string.IsNullOrEmpty(ImpTotal.ToString()) ? ImpTotal.ToString() : "1",
+                                           "&Status=", !string.IsNullOrEmpty(status) ? status : "0",
+                                           "&NombreApp=", !string.IsNullOrEmpty(NombreApp) ? NombreApp : "CapControlCaja.dll");
+
+                navFireFoxPersonalizado.StartInfo.FileName = strNavFireFoxPersonalizado;
+                this.administradorAplicaciones.ctrBitacora.GuardarEnLog(url);
+                this.administradorAplicaciones.ctrBitacora.GuardarEnLog(string.Concat(administradorAplicaciones.ctrSesion.IDUsuario, ",", administradorAplicaciones.ctrSesion.Password, ",", url));
+                navFireFoxPersonalizado.StartInfo.Arguments = string.Concat(administradorAplicaciones.ctrSesion.IDUsuario, ",", administradorAplicaciones.ctrSesion.Password, ",", url);
+                navFireFoxPersonalizado.Start();
+
+                navFireFoxPersonalizado.WaitForExit();
+
+                if (navFireFoxPersonalizado.HasExited)
+                {
+                    respuestaOperacionCajaCheque = ValidaRespuestaOperacionesChueques(IdSesion);
+
+                    if (!respuestaOperacionCajaCheque.EstatusExito)
+                    {
+                        throw new InvalidDataException(string.Concat("No fue posible recuperar los datos de las sesión: ", IdSesion));
+                    }
+                }
+
+                return respuestaOperacionCajaCheque;
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public bool ValidarAvisosCajero()
+        {
+            try
+            {
+
+                this.administradorAplicaciones.ctrBitacora.GuardarEnLog("ValidarAvisosCajero()");
+                this.administradorAplicaciones.ctrBitacora.GuardarEnLog("Instanciando la clase AbdCaja");
+
+                this.administradorAplicaciones.ctrBitacora.GuardarEnLog("Validando los Avisos del Cajero tipo de pago " + this.IdTipoPago);
+
+                this.administradorAplicaciones.ctrBitacora.GuardarEnLog("ValidarAvisosCajero()");
+                string lstrSql = string.Concat("Exec ", "spAhoConAvisosCajero ", "'", administradorAplicaciones.ctrControl.Empleado.IdEmpleado, "',", IdTipoPago.ToString());
+                this.administradorAplicaciones.ctrBitacora.GuardarEnLog(string.Concat("Ejecutando Sql ", lstrSql));
+                DataTable dt = new DataTable();
+                if (administradorAplicaciones.ctrAbd.Ejecutar(lstrSql))
+                {
+                    if (administradorAplicaciones.ctrAbd.Registros() > 0)
+                    {
+                        string idRegistro = administradorAplicaciones.ctrAbd.Dato("Respuesta").ToString().Trim();
+                        return Convert.ToBoolean(Convert.ToInt16(idRegistro));
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        //public ValidaAccesoUsuario ValidaAcceso()
+        //{
+        //    try
+        //    {
+        //        AccesoClient solicitaAcceso = new AccesoClient();
+
+        //        ValidaAccesoUsuario validaAccesoUsuario = new ValidaAccesoUsuario();
+
+        //        Respuesta respuesta = solicitaAcceso.SolicitaAcceso(this.administradorAplicaciones.ctrSesion.IDUsuario, "", this.administradorAplicaciones.ctrControl.Terminal);
+
+        //        validaAccesoUsuario.AccesoConcedido = respuesta.AccesoConcedido;
+        //        validaAccesoUsuario.AccesoCobrar = respuesta.AccesoCobrar;
+        //        validaAccesoUsuario.Aplicacion = respuesta.Aplicacion;
+        //        validaAccesoUsuario.Mensaje = respuesta.Mensaje;
+        //        validaAccesoUsuario.MinutosRestantesRendicion = respuesta.MinutosRestantesRendicion;
+        //        validaAccesoUsuario.ParametrosAdicionales = respuesta.ParametrosAdicionales;
+        //        validaAccesoUsuario.ParametrosAplicacion = respuesta.ParametrosAplicacion;
+        //        validaAccesoUsuario.TipoAplicacion = respuesta.TipoAplicacion;
+
+        //        return validaAccesoUsuario;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        throw new InvalidDataException(string.Concat("Ocurrió un error con la validación de acceso para el usuario: ", ex.Message, (ex.InnerException != null) ? string.Concat(" InnerException: ", ex.InnerException.Message) : ""));
+        //    }
+        //}
+
+        /// <summary>
+        /// Previamente se debe inicializar la propiedad Divisa. Devolverá un booleano al finalizar. 
+        /// Depede del tiempo que tarde el cajero en usar el front web de Caja64 BAZ
+        /// </summary>
+        /// <param name="pdblImporte"> Importe por el cual se quiere verificar el fondeo</param>
+        /// <returns></returns>
+        public bool FondearCaja(Decimal pdblImporte)
+        {
+            try
+            {
+                bool fondeoCaja = false;
+
+                if ((bool)this.administradorAplicaciones.ctrParametro.Obtener(4123))
+                {
+                    Process navFireFoxPersonalizado = new Process();
+                    short intentos = 0;
+                    ResponseFondeo validaFondeo = ValidaFondeoDeCaja(pdblImporte);
+
+                    while (intentos < 3)
+                    {
+                        switch (validaFondeo.NoError)
+                        {
+                            case 0:
+                                fondeoCaja = true;
+                                intentos = 3;
+                                break;
+                            case 1:
+                                fondeoCaja = false;
+                                break;
+                            case 3:
+                                fondeoCaja = false;
+                                throw new Exception(String.Concat("El servicio de Fondeo de Caja devolvió un error: ", validaFondeo.Descripcion));
+                                break;
+                        }
+
+                        respuestaCaja = validaFondeo.Descripcion;
+
+                        if (!fondeoCaja)
+                        {
+                            short platinumParamCustomBrowser = Convert.ToInt16(administradorAplicaciones.ctrParametro.Obtener(3925).ToString());
+                            string customFirefoxBrowser = administradorAplicaciones.ctrParametro.Obtener(3926).ToString();
+                            string url = string.Concat("http://", nt, ":9014/Caja/Fronts/Fondeo/Fondeo.html?", "divisa=", TipoDivisa, "&monto=", pdblImporte.ToString(), "&usuario=", administradorAplicaciones.ctrControl.Empleado.IdEmpleado, "&ws=", administradorAplicaciones.ctrSesion.IDEstacionTrabajo, "&esWeb=", false);
+
+                            navFireFoxPersonalizado.StartInfo.FileName = customFirefoxBrowser;
+                            navFireFoxPersonalizado.StartInfo.Arguments = string.Concat(administradorAplicaciones.ctrSesion.IDUsuario, ",", administradorAplicaciones.ctrSesion.Password, ",", url);//Definir páramero para determinar si se ejecuta en navegador o en aplicación de escritorio
+                            navFireFoxPersonalizado.Start();
+
+                            navFireFoxPersonalizado.WaitForExit();
+
+
+                            if (navFireFoxPersonalizado.HasExited)
+                            {
+                                validaFondeo = ValidaFondeoDeCaja(pdblImporte);
+
+                                if (validaFondeo.NoError != 0)
+                                {
+                                    intentos += 1;
+                                }
+                                else
+                                {
+                                    intentos = 3;
+                                    fondeoCaja = true;
+                                }
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    fondeoCaja = true;
+                }
+
+                return fondeoCaja;
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public bool RegistraImagenDevolucionChequesBAZ()
+        {
+            try
+            {
+                //this.administradorAplicaciones.ctrBitacora.GuardarEnLog( "RegistraImagenDevolucionChequesBAZ";
+                //this.administradorAplicaciones.ctrBitacora.GuardarEnLog( "Ejecutando el método RegistraImagenDevolucionChequesBAZ de Caja";
+                ////System.Windows.Forms.Application.DoEvents();
+                //RegistraImagenDevolucionChequesBAZ = Caja.RegistraImagenDevolucionChequesBAZ;
+                throw new NotImplementedException("No se ha desarrollado la parte final de caja para cheques.");
+            }
+            catch (Exception ex)
+            {
+                //Err.Clear();
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public bool ObtenDenominacion()
+        {
+            try
+            {
+                administradorAplicaciones.ctrBitacora.MostrarEnTrace(" *** Inicia Configuración Obtener Denominaciones ***");
+                administradorAplicaciones.ctrBitacora.MostrarEnTrace(".UsrCaja = " + administradorAplicaciones.ctrSesion.IDUsuario);
+                administradorAplicaciones.ctrBitacora.MostrarEnTrace(".WS = " + administradorAplicaciones.ctrSesion.IDEstacionTrabajo);
+                administradorAplicaciones.ctrBitacora.MostrarEnTrace(".TipoOperacion = " + TipodeOperacion);
+                administradorAplicaciones.ctrBitacora.MostrarEnTrace(".ConcepMov = 0 - Fijo");
+                administradorAplicaciones.ctrBitacora.MostrarEnTrace(".Referencia = - Fijo");
+                administradorAplicaciones.ctrBitacora.MostrarEnTrace(".lsNotienda = " + administradorAplicaciones.ctrControl.IdSucursal);
+                administradorAplicaciones.ctrBitacora.MostrarEnTrace(".liNegocio = 1 - Fijo");
+                administradorAplicaciones.ctrBitacora.MostrarEnTrace(".Esdivisa = False - Fijo");
+                administradorAplicaciones.ctrBitacora.MostrarEnTrace(".liImpTotalVta = " + string.Format("##############0.00", Importe));
+                administradorAplicaciones.ctrBitacora.MostrarEnTrace(".Importe_Total = " + string.Format("##############0.00", Importe));
+                administradorAplicaciones.ctrBitacora.MostrarEnTrace(".gnImporte = " + Importe);
+                administradorAplicaciones.ctrBitacora.MostrarEnTrace(".Importe_Efectivo =" + string.Format("##############0.00", Importe));
+                administradorAplicaciones.ctrBitacora.MostrarEnTrace(".lsTipoVta = 1  - Fijo - 1=Contado, 2=Credito");
+                administradorAplicaciones.ctrBitacora.MostrarEnTrace(".gnPresupuesto = 0 - Fijo");
+                administradorAplicaciones.ctrBitacora.MostrarEnTrace(".NumeroTransthis.administradorAplicaciones.ctrBitacora.GuardarEnLog( 0");
+
+                this.ConcepMov = "0";
+
+                administradorAplicaciones.ctrBitacora.MostrarEnTrace(" *** Termina Configuraciòn Obtener Denominaciones ***");
+                if (TipodeOperacion == 388 & IdTipoPago != 1)
+                {
+                }
+                else
+                {
+                    administradorAplicaciones.ctrBitacora.MostrarEnTrace(" Invoca RegistraDenominaciones");
+
+                }
+
+                administradorAplicaciones.ctrBitacora.MostrarEnTrace(" Termina RegistraDenominaciones de manera correcta");
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                administradorAplicaciones.ctrBitacora.MostrarEnTrace("Error en funciòn ObtenDenominacion");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Especificar la propiedad: TipoPago para hacer la ejecución correctamente
+        /// Si es 'true' se encuentra topada la caja y no se podrán hacer afectaciones
+        /// </summary>
+        /// <returns></returns>
+        public bool ValidarTopeCaja()
+        {
+            try
+            {
+                if (this.IdTipoPago != 0)
+                {
+                    this.administradorAplicaciones.ctrBitacora.GuardarEnLog("ValidarTopesCaja()");
+
+                    string lstrSql = string.Concat("Exec ", "PACJCCValidaTopeEmpleado ", "'", administradorAplicaciones.ctrControl.Empleado.IdEmpleado, "',", this.TipoDivisa, ",", IdTipoPago);
+                    this.administradorAplicaciones.ctrBitacora.GuardarEnLog(string.Concat("Ejecutando Sql ", lstrSql));
+
+                    DataTable dt = new DataTable();
+                    if (administradorAplicaciones.ctrAbd.Ejecutar(lstrSql))
+                    {
+                        if (administradorAplicaciones.ctrAbd.Registros() > 0)
+                        {
+                            string idRegistro = administradorAplicaciones.ctrAbd.Dato("TopeExcedido").ToString().Trim();
+                            return Convert.ToBoolean(idRegistro);
+                        }
+                        else
+                        {
+                            throw new DataException("No se resolvió adecuadamente la respuesta del sp PACJCCValidaTopeEmpleado en la base de datos.");
+                        }
+                    }
+                    else
+                    {
+                        throw new MissingFieldException("No fue posible ejecutar la consulta en la base de datos.");
+                    }
+                }
+                else
+                {
+                    throw new MissingFieldException("Se debe indicar el tipo de pago para validar el tope de la caja.");
+                }
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        public bool AvisarAGerente()
+        {
+            try
+            {
+                if (this.Importe > 0)
+                {
+                    string comandoSql = string.Concat("EXEC PACJCFMensajesValida 1,", administradorAplicaciones.ctrControl.Empleado.IdEmpleado, ",", this.Importe);
+                    administradorAplicaciones.ctrBitacora.GuardarEnLog(string.Concat("Validando: ", comandoSql));
+                    if (administradorAplicaciones.ctrAbd.Ejecutar(comandoSql))
+                    {
+                        if (administradorAplicaciones.ctrAbd.Registros() > 0)
+                        {
+                            return true;
+                        }
+                        else
+                        {
+                            throw new DataException("No se resolvió adecuadamente la respuesta del sp PACJCFMensajesValida en la base de datos.");
+                        }
+                    }
+                    else
+                    {
+                        throw new MissingFieldException("No fue posible ejecutar la consulta en la base de datos.");
+                    }
+                }
+                else
+                {
+                    throw new MissingFieldException("El Importe debe ser mayor a 0 para validar los mensajes.");
+                }
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+
+        public string ValidarBloqueoEmpleadosCaja()
+        {
+            try
+            {
+                this.ConfigurarDivisaDeCaja();
+                if (this.TipoDivisa != 0)
+                {
+                    if (this.IdTipoPago != 0)
+                    {
+                        string comandoSql = string.Concat("EXEC PACJCFLUConBloqueo ", this.TipoDivisa, ",", this.IdTipoPago, ",", administradorAplicaciones.ctrControl.Empleado.IdEmpleado);
+                        administradorAplicaciones.ctrBitacora.GuardarEnLog(string.Concat("Validando: ", comandoSql));
+                        if (administradorAplicaciones.ctrAbd.Ejecutar(comandoSql))
+                        {
+                            if (administradorAplicaciones.ctrAbd.Registros() > 0)
+                            {
+                                DataTable dt = (DataTable)administradorAplicaciones.ctrAbd.DataTable();
+                                this.respuestaCaja = administradorAplicaciones.ctrAbd.Dato("Mensaje").ToString().Trim();
+                                return administradorAplicaciones.ctrAbd.Dato("Respuesta").ToString().Trim();
+                            }
+                            else
+                            {
+                                throw new DataException("No se resolvió adecuadamente la respuesta del sp PACJCFMensajesValida en la base de datos.");
+                            }
+                        }
+                        else
+                        {
+                            throw new MissingFieldException("No fue posible ejecutar la consulta en la base de datos.");
+                        }
+                    }
+                    else
+                    {
+                        throw new MissingFieldException("Se debe indicar el tipo de pago para validar si el usuario se encuentra bloqueado.");
+                    }
+                }
+                else
+                {
+                    throw new MissingFieldException("Se debe indicar la divisa para validar si el usuario se encuentra bloqueado.");
+                }
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+        #endregion
+
+        #region Métodos Privados
+
+        private string requestFondeoJSONstr(string usuario, Decimal monto, int divisa, string ws)
+        {
+            RequestFondeo request = new RequestFondeo(usuario, monto, divisa, ws);
+            JavaScriptSerializer jss = new JavaScriptSerializer();
+            string _result = jss.Serialize(request);
+
+            return _result;
+        }
+
+        private string ChequeDevueltoJSONstr(string banda, string cuenta, decimal importe, string descripcion)
+        {
+            ChequeDevuelto request = new ChequeDevuelto(banda, cuenta, importe, descripcion);
+            JavaScriptSerializer jss = new JavaScriptSerializer();
+            string _result = jss.Serialize(request);
+            return _result;
+        }
+
+        private ResponseFondeo responseFondeoJSONstr(string response)
+        {
+            JavaScriptSerializer jss = new JavaScriptSerializer();
+            ResponseFondeo _response = jss.Deserialize<ResponseFondeo>(response);
+
+            return _response;
+        }
+
+        private ResponseChequeDevuelto responseChequeDevueltoJSONstr(string response)
+        {
+            JavaScriptSerializer jss = new JavaScriptSerializer();
+            ResponseChequeDevuelto _response = jss.Deserialize<ResponseChequeDevuelto>(response);
+
+            return _response;
+        }
+
+        private ResponseFondeo ValidaFondeoDeCaja(Decimal importe)
+        {
+            try
+            {
+                ConfigurarDivisaDeCaja();
+                string url = String.Concat("http://", nt, ":9014/Caja/Servicios/FondeoAutomatico/FondeoAutomatico.svc/wsFondeoValidaSaldo"); //this.administradorAplicaciones.ctrParametro.Obtener(2886).ToString().Trim();
+
+                HttpWebRequest req = WebRequest.Create(url) as HttpWebRequest;
+                req.KeepAlive = false;
+                req.Method = "POST";
+                req.AllowAutoRedirect = true;
+                req.Timeout = 5000;
+                req.PreAuthenticate = true;
+                req.Credentials = CredentialCache.DefaultCredentials;
+
+                string JSON = this.requestFondeoJSONstr(administradorAplicaciones.ctrControl.Empleado.IdEmpleado, importe, this.TipoDivisa, administradorAplicaciones.ctrSesion.IDEstacionTrabajo);
+
+                byte[] buffer = Encoding.ASCII.GetBytes(JSON);
+                req.ContentLength = buffer.Length;
+                req.ContentType = "application/json;charset=UTF-8";
+                Stream PostData = req.GetRequestStream();
+                PostData.Write(buffer, 0, buffer.Length);
+                PostData.Close();
+
+                HttpWebResponse resp = req.GetResponse() as HttpWebResponse;
+
+                Stream stream = resp.GetResponseStream();
+
+                Encoding encoding = System.Text.Encoding.GetEncoding("utf-8");
+
+                StreamReader streamReader = new StreamReader(stream, encoding);
+
+                string result = streamReader.ReadToEnd();
+
+                streamReader.Close();
+                resp.Close();
+
+                ResponseFondeo response = new ResponseFondeo();
+                response = this.responseFondeoJSONstr(result);
+
+
+
+                return response;
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        private ObjetoRespuestaCajaCheque ValidaRespuestaOperacionesChueques(string IdSesion)
+        {
+            try
+            {
+                CAPOperacionesChequesClient cheques = new CAPOperacionesChequesClient();
+
+                ObjetoRespuestaCajaCheque respuestaOperacionCheque = new ObjetoRespuestaCajaCheque();
+
+                respuestaOperacionCheque = cheques.ConsultaOperacionesCheques(IdSesion);
+
+                return respuestaOperacionCheque;
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        private void CargaComponentesCaja()
+        {
+            try
+            {
+                Assembly bazCajaAfectacion, bazCajaoperativoWebProxyAfectacion, bazCajaEntidadesAfectacion;
+                this.administradorAplicaciones.ctrBitacora.GuardarEnLog("Cargando Ensamblados para afectación de caja.");
+
+                bazCajaAfectacion = Assembly.LoadFrom(@"K:\\NET64_BAZ\\Caja\\BazCajaSuc\\bin\\Baz.Caja.Afectacion.dll");
+                bazCajaoperativoWebProxyAfectacion = Assembly.LoadFrom(@"K:\\NET64_BAZ\\Caja\\BazCajaSuc\\bin\\Baz.Caja.Operativo.Web.Proxy.Afectacion.dll");
+                bazCajaEntidadesAfectacion = Assembly.LoadFrom(@"K:\\NET64_BAZ\\Caja\\BazCajaSuc\\bin\\Baz.Caja.Entidades.Afectacion.dll");
+
+                if (!agregados.ContainsKey(bazCajaAfectacion.FullName))
+                {
+                    this.administradorAplicaciones.ctrBitacora.GuardarEnLog("Agregando Baz.Caja.Afectacion.dll");
+                    agregados.Add(bazCajaAfectacion.FullName, bazCajaAfectacion);
+                }
+
+                if (!agregados.ContainsKey(bazCajaoperativoWebProxyAfectacion.FullName))
+                {
+                    this.administradorAplicaciones.ctrBitacora.GuardarEnLog("Cargando Baz.Caja.Operativo.Web.Proxy.Afectacion.dll");
+                    agregados.Add(bazCajaoperativoWebProxyAfectacion.FullName, bazCajaoperativoWebProxyAfectacion);
+                }
+
+                if (!agregados.ContainsKey(bazCajaEntidadesAfectacion.FullName))
+                {
+                    this.administradorAplicaciones.ctrBitacora.GuardarEnLog("Cargando Baz.Caja.Entidades.Afectacion.dll");
+                    agregados.Add(bazCajaEntidadesAfectacion.FullName, bazCajaEntidadesAfectacion);
+                }
+
+                AppDomain.CurrentDomain.ReflectionOnlyAssemblyResolve += VerificaEnsamblado;
+                AppDomain.CurrentDomain.AssemblyResolve += VerificaEnsamblado;
+            }
+            catch (Exception ex)
+            {
+                this.administradorAplicaciones.ctrBitacora.GuardarEnLog(string.Concat("Error al cargar los ensamblados de caja: ", (ex.InnerException != null) ? string.Concat(ex.Message, " Inner: ", ex.InnerException.Message) : ex.Message));
+                throw;
+            }
+        }
+
+        private Assembly VerificaEnsamblado(Object sender, ResolveEventArgs e)
+        {
+            Assembly resuelto;
+            agregados.TryGetValue(e.Name, out resuelto);
+            return resuelto;
+        }
+
+        #endregion
+
+
+    }
+
+    #region Public classes
+    public class ValidaAccesoUsuario
+    {
+        private bool accesoConcedido;
+        private string mensaje;
+        private bool accesoCobrar;
+        private string aplicacion;
+        private int minutosRestantesRendicion;
+        private string parametrosAdicionales;
+        private string parametrosAplicacion;
+        private int tipoAplicacion;
+
+        public bool AccesoConcedido
+        {
+            get { return accesoConcedido; }
+            set { accesoConcedido = value; }
+        }
+
+        public string Mensaje
+        {
+            get { return mensaje; }
+            set { mensaje = value; }
+        }
+
+        public bool AccesoCobrar
+        {
+            get { return accesoCobrar; }
+            set { accesoCobrar = value; }
+        }
+
+        public string Aplicacion
+        {
+            get { return aplicacion; }
+            set { aplicacion = value; }
+        }
+
+        public int MinutosRestantesRendicion
+        {
+            get { return minutosRestantesRendicion; }
+            set { minutosRestantesRendicion = value; }
+        }
+
+        public string ParametrosAdicionales
+        {
+            get { return parametrosAdicionales; }
+            set { parametrosAdicionales = value; }
+        }
+
+        public string ParametrosAplicacion
+        {
+            get { return parametrosAplicacion; }
+            set { parametrosAplicacion = value; }
+        }
+
+        public int TipoAplicacion
+        {
+            get { return tipoAplicacion; }
+            set { tipoAplicacion = value; }
+        }
+    }
+
+    public class RespuestaOperacionCheque
+    {
+        private bool estatusExito;
+        private string mensaje;
+        private string aplicacion;
+        private List<Documento> listaDocumentos;
+
+        public bool EstatusExito
+        {
+            get { return estatusExito; }
+            set { estatusExito = value; }
+        }
+
+        public string Mensaje
+        {
+            get { return mensaje; }
+            set { mensaje = value; }
+        }
+
+        public string Aplicacion
+        {
+            get { return aplicacion; }
+            set { aplicacion = value; }
+        }
+
+        public List<Documento> ListaDocumentos
+        {
+            get { return listaDocumentos; }
+            set { listaDocumentos = value; }
+        }
+    }
+
+    public class Documento
+    {
+        private string TipoPago;
+        private string Bco;
+        private string CaveTran;
+        private int CodSeg;
+        private short DigInter;
+        private decimal ImporteDocumento;
+        private string NumCta;
+        private string Numero;
+        private string NumeroDocumento;
+        private int PlaComp;
+        private int PreMarc;
+
+        public string tipoPago
+        {
+            get { return TipoPago; }
+            set { TipoPago = value; }
+        }
+
+        public string bco
+        {
+            get { return Bco; }
+            set { Bco = value; }
+        }
+
+        public string caveTran
+        {
+            get { return CaveTran; }
+            set { CaveTran = value; }
+        }
+
+        public int codSeg
+        {
+            get { return CodSeg; }
+            set { CodSeg = value; }
+        }
+
+        public short digInter
+        {
+            get { return DigInter; }
+            set { DigInter = value; }
+        }
+
+        public decimal importeDocumento
+        {
+            get { return ImporteDocumento; }
+            set { ImporteDocumento = value; }
+        }
+
+        public string numCta
+        {
+            get { return NumCta; }
+            set { NumCta = value; }
+        }
+
+        public string numero
+        {
+            get { return Numero; }
+            set { Numero = value; }
+        }
+
+        public string numeroDocumento
+        {
+            get { return NumeroDocumento; }
+            set { NumeroDocumento = value; }
+        }
+
+        public int plaComp
+        {
+            get { return PlaComp; }
+            set { PlaComp = value; }
+        }
+
+        public int preMarc
+        {
+            get { return PreMarc; }
+            set { PreMarc = value; }
+        }
+    }
+
+    #endregion
+
+    #region Internal Classes
+
+    internal class RequestFondeo
+    {
+        public string Usuario { get; set; }
+        public decimal Monto { get; set; }
+        public int Divisa { get; set; }
+        public string Ws { get; set; }
+
+        public RequestFondeo(string usuario, Decimal monto, int divisa, string ws)
+        {
+            Divisa = divisa;
+            Usuario = usuario;
+            Ws = ws;
+            Monto = monto;
+        }
+
+    }
+    internal class ChequeDevuelto
+    {
+        public string BandaCheque { get; set; }
+        public string CuentaCheque { get; set; }
+        public decimal Importe { get; set; }
+        public string DescripcionStatus { get; set; }
+
+        public ChequeDevuelto(string bandaCheque, string cuentaCheque, decimal importe, string descripcionStatus)
+        {
+            this.BandaCheque = bandaCheque;
+            this.CuentaCheque = cuentaCheque;
+            this.Importe = importe;
+            this.DescripcionStatus = descripcionStatus;
+        }
+    }
+    internal class ResponseFondeo
+    {
+        public string Descripcion { get; set; }
+        public string Exe { get; set; }
+        public decimal MontoFondeo { get; set; }
+        public int NoError { get; set; }
+
+    }
+
+    internal class ResponseChequeDevuelto
+    {
+        public int NoError { get; set; }
+        public string Descripcion { get; set; }
+        public bool Respuesta { get; set; }
+    }
+
+    #endregion
+}

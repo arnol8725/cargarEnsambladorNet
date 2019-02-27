@@ -1,0 +1,30 @@
+E:\Proyectos VS\Proyectos\CAPControlCajaSln\CAPControlCaja\bin\Debug\CAPControlCaja.dll.config
+E:\Proyectos VS\Proyectos\CAPControlCajaSln\CAPControlCaja\bin\Debug\CAPControlCaja.dll
+E:\Proyectos VS\Proyectos\CAPControlCajaSln\CAPControlCaja\bin\Debug\CAPControlCaja.pdb
+E:\Proyectos VS\Proyectos\CAPControlCajaSln\CAPControlCaja\bin\Debug\AdnAdmonLite.dll
+E:\Proyectos VS\Proyectos\CAPControlCajaSln\CAPControlCaja\bin\Debug\Banco.PD3.Persistence.dll
+E:\Proyectos VS\Proyectos\CAPControlCajaSln\CAPControlCaja\bin\Debug\CapAdmonApl.dll
+E:\Proyectos VS\Proyectos\CAPControlCajaSln\CAPControlCaja\bin\Debug\PD3.PolicyManager.dll
+E:\Proyectos VS\Proyectos\CAPControlCajaSln\CAPControlCaja\bin\Debug\PD3.Utilities.dll
+E:\Proyectos VS\Proyectos\CAPControlCajaSln\CAPControlCaja\bin\Debug\log4net.dll
+E:\Proyectos VS\Proyectos\CAPControlCajaSln\CAPControlCaja\bin\Debug\SmoothProgressBar.dll
+E:\Proyectos VS\Proyectos\CAPControlCajaSln\CAPControlCaja\bin\Debug\QbosClient.dll
+E:\Proyectos VS\Proyectos\CAPControlCajaSln\CAPControlCaja\bin\Debug\QbosClientReverse.dll
+E:\Proyectos VS\Proyectos\CAPControlCajaSln\CAPControlCaja\bin\Debug\log4net.xml
+E:\Proyectos VS\Proyectos\CAPControlCajaSln\CAPControlCaja\obj\Debug\CAPControlCaja.csprojResolveAssemblyReference.cache
+E:\Proyectos VS\Proyectos\CAPControlCajaSln\CAPControlCaja\obj\Debug\CAPControlCaja.dll
+E:\Proyectos VS\Proyectos\CAPControlCajaSln\CAPControlCaja\obj\Debug\CAPControlCaja.pdb
+E:\Users\B313019\Documents\CAPControlCajaSln\CAPControlCaja\bin\Debug\CAPControlCaja.dll.config
+E:\Users\B313019\Documents\CAPControlCajaSln\CAPControlCaja\bin\Debug\CAPControlCaja.dll
+E:\Users\B313019\Documents\CAPControlCajaSln\CAPControlCaja\bin\Debug\CAPControlCaja.pdb
+E:\Users\B313019\Documents\CAPControlCajaSln\CAPControlCaja\bin\Debug\Banco.PD3.Persistence.dll
+E:\Users\B313019\Documents\CAPControlCajaSln\CAPControlCaja\bin\Debug\CapAdmonApl.dll
+E:\Users\B313019\Documents\CAPControlCajaSln\CAPControlCaja\bin\Debug\PD3.PolicyManager.dll
+E:\Users\B313019\Documents\CAPControlCajaSln\CAPControlCaja\bin\Debug\PD3.Utilities.dll
+E:\Users\B313019\Documents\CAPControlCajaSln\CAPControlCaja\bin\Debug\log4net.dll
+E:\Users\B313019\Documents\CAPControlCajaSln\CAPControlCaja\bin\Debug\SmoothProgressBar.dll
+E:\Users\B313019\Documents\CAPControlCajaSln\CAPControlCaja\bin\Debug\QbosClient.dll
+E:\Users\B313019\Documents\CAPControlCajaSln\CAPControlCaja\bin\Debug\QbosClientReverse.dll
+E:\Users\B313019\Documents\CAPControlCajaSln\CAPControlCaja\obj\Debug\CAPControlCaja.csprojResolveAssemblyReference.cache
+E:\Users\B313019\Documents\CAPControlCajaSln\CAPControlCaja\obj\Debug\CAPControlCaja.dll
+E:\Users\B313019\Documents\CAPControlCajaSln\CAPControlCaja\obj\Debug\CAPControlCaja.pdb

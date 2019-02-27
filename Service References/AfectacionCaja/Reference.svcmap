@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ReferenceGroup xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" ID="a5e3853c-f4da-4aff-9bf5-ea0b9a6cdec3" xmlns="urn:schemas-microsoft-com:xml-wcfservicemap">
+  <ClientOptions>
+    <GenerateAsynchronousMethods>false</GenerateAsynchronousMethods>
+    <EnableDataBinding>true</EnableDataBinding>
+    <ExcludedTypes />
+    <ImportXmlTypes>false</ImportXmlTypes>
+    <GenerateInternalTypes>false</GenerateInternalTypes>
+    <GenerateMessageContracts>false</GenerateMessageContracts>
+    <NamespaceMappings />
+    <CollectionMappings />
+    <GenerateSerializableTypes>true</GenerateSerializableTypes>
+    <Serializer>Auto</Serializer>
+    <UseSerializerForFaults>true</UseSerializerForFaults>
+    <ReferenceAllAssemblies>true</ReferenceAllAssemblies>
+    <ReferencedAssemblies />
+    <ReferencedDataContractTypes />
+    <ServiceContractMappings />
+  </ClientOptions>
+  <MetadataSources>
+    <MetadataSource Address="http://10.54.28.222:9002/ADNCaptacion/Kernell/CAPAfectacionCaja.svc/mex" Protocol="mex" SourceId="1" />
+  </MetadataSources>
+  <Metadata>
+    <MetadataFile FileName="service.wsdl" MetadataType="Wsdl" ID="bf3e8362-460a-4311-96da-15e37614242a" SourceId="1" SourceUrl="http://10.54.28.222:9002/ADNCaptacion/Kernell/CAPAfectacionCaja.svc/mex" />
+    <MetadataFile FileName="service.xsd" MetadataType="Schema" ID="d7cdefec-99a2-4a4b-912f-501af140da2f" SourceId="1" SourceUrl="http://10.54.28.222:9002/ADNCaptacion/Kernell/CAPAfectacionCaja.svc/mex" />
+    <MetadataFile FileName="service1.xsd" MetadataType="Schema" ID="3a473acd-5a04-46cc-99f4-8881addb3d53" SourceId="1" SourceUrl="http://10.54.28.222:9002/ADNCaptacion/Kernell/CAPAfectacionCaja.svc/mex" />
+    <MetadataFile FileName="CAPAfectaCajaService.xsd" MetadataType="Schema" ID="b4f3107c-da42-4cff-a91a-ffef2b0e8d48" SourceId="1" SourceUrl="http://10.54.28.222:9002/ADNCaptacion/Kernell/CAPAfectacionCaja.svc/mex" />
+  </Metadata>
+  <Extensions>
+    <ExtensionFile FileName="configuration91.svcinfo" Name="configuration91.svcinfo" />
+    <ExtensionFile FileName="configuration.svcinfo" Name="configuration.svcinfo" />
+  </Extensions>
+</ReferenceGroup>

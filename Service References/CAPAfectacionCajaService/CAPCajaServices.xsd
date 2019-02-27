@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:tns="http://schemas.datacontract.org/2004/07/CAPCajaServices" elementFormDefault="qualified" targetNamespace="http://schemas.datacontract.org/2004/07/CAPCajaServices" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:complexType name="ObjetoAfectacionCaja">
+    <xs:sequence>
+      <xs:element name="Concepto" type="xs:int" />
+      <xs:element name="Divisa" type="xs:int" />
+      <xs:element name="Empleado" nillable="true" type="xs:string" />
+      <xs:element name="Importe" type="xs:decimal" />
+      <xs:element name="ImporteEfectivo" type="xs:decimal" />
+      <xs:element name="Nt" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="Pedido" type="xs:int" />
+      <xs:element minOccurs="0" name="Presupuesto" type="xs:int" />
+      <xs:element name="Pwd" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" name="Referencia" nillable="true" type="xs:string" />
+      <xs:element name="TipoAfectacion" type="xs:int" />
+      <xs:element name="TipoMovimiento" type="xs:int" />
+      <xs:element name="Top" type="xs:int" />
+      <xs:element name="Transaccion" type="xs:int" />
+      <xs:element name="Url" nillable="true" type="xs:string" />
+      <xs:element name="Usr" nillable="true" type="xs:string" />
+      <xs:element name="Ws" nillable="true" type="xs:string" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="ObjetoAfectacionCaja" nillable="true" type="tns:ObjetoAfectacionCaja" />
+</xs:schema>

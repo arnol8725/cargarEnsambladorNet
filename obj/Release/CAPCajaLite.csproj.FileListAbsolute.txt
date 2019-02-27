@@ -1,0 +1,40 @@
+\\10.54.28.222\adn\Tmp\CAPControlCaja\bin\Release\CAPCajaLite.dll.config
+\\10.54.28.222\adn\Tmp\CAPControlCaja\bin\Release\CAPCajaLite.xml
+\\10.54.28.222\adn\Tmp\CAPControlCaja\bin\Release\CAPCajaLite.dll
+\\10.54.28.222\adn\Tmp\CAPControlCaja\bin\Release\Banco.PD3.Persistence.dll
+\\10.54.28.222\adn\Tmp\CAPControlCaja\bin\Release\CapAdmonApl.dll
+\\10.54.28.222\adn\Tmp\CAPControlCaja\bin\Release\PD3.PolicyManager.dll
+\\10.54.28.222\adn\Tmp\CAPControlCaja\bin\Release\PD3.Utilities.dll
+\\10.54.28.222\adn\Tmp\CAPControlCaja\bin\Release\log4net.dll
+\\10.54.28.222\adn\Tmp\CAPControlCaja\bin\Release\SmoothProgressBar.dll
+\\10.54.28.222\adn\Tmp\CAPControlCaja\bin\Release\QbosClient.dll
+\\10.54.28.222\adn\Tmp\CAPControlCaja\bin\Release\QbosClientReverse.dll
+\\10.54.28.222\adn\Tmp\CAPControlCaja\bin\Release\log4net.xml
+\\10.54.28.222\adn\Tmp\CAPControlCaja\obj\Release\CAPCajaLite.csprojResolveAssemblyReference.cache
+\\10.54.28.222\adn\Tmp\CAPControlCaja\obj\Release\CAPCajaLite.dll
+K:\Tmp\CAPControlCaja\bin\Release\CAPCajaLite.dll.config
+K:\Tmp\CAPControlCaja\bin\Release\CAPCajaLite.xml
+K:\Tmp\CAPControlCaja\bin\Release\CAPCajaLite.dll
+K:\Tmp\CAPControlCaja\bin\Release\Banco.PD3.Persistence.dll
+K:\Tmp\CAPControlCaja\bin\Release\CapAdmonApl.dll
+K:\Tmp\CAPControlCaja\bin\Release\PD3.PolicyManager.dll
+K:\Tmp\CAPControlCaja\bin\Release\PD3.Utilities.dll
+K:\Tmp\CAPControlCaja\bin\Release\log4net.dll
+K:\Tmp\CAPControlCaja\bin\Release\SmoothProgressBar.dll
+K:\Tmp\CAPControlCaja\bin\Release\QbosClient.dll
+K:\Tmp\CAPControlCaja\bin\Release\QbosClientReverse.dll
+K:\Tmp\CAPControlCaja\bin\Release\log4net.xml
+K:\Tmp\CAPControlCaja\obj\Release\CAPCajaLite.csprojResolveAssemblyReference.cache
+K:\Tmp\CAPControlCaja\obj\Release\CAPCajaLite.dll
+E:\Users\B323463\Documents\Visual Studio 2015\Projects\03 - Concluidas\CAPControlCaja\bin\Release\CAPCajaLite.dll.config
+E:\Users\B323463\Documents\Visual Studio 2015\Projects\03 - Concluidas\CAPControlCaja\bin\Release\CAPCajaLite.xml
+E:\Users\B323463\Documents\Visual Studio 2015\Projects\03 - Concluidas\CAPControlCaja\bin\Release\CAPCajaLite.dll
+E:\Users\B323463\Documents\Visual Studio 2015\Projects\03 - Concluidas\CAPControlCaja\bin\Release\AdnAdmonLite.dll
+E:\Users\B323463\Documents\Visual Studio 2015\Projects\03 - Concluidas\CAPControlCaja\bin\Release\Banco.PD3.Persistence.dll
+E:\Users\B323463\Documents\Visual Studio 2015\Projects\03 - Concluidas\CAPControlCaja\bin\Release\CapAdmonApl.dll
+E:\Users\B323463\Documents\Visual Studio 2015\Projects\03 - Concluidas\CAPControlCaja\bin\Release\PD3.PolicyManager.dll
+E:\Users\B323463\Documents\Visual Studio 2015\Projects\03 - Concluidas\CAPControlCaja\bin\Release\PD3.Utilities.dll
+E:\Users\B323463\Documents\Visual Studio 2015\Projects\03 - Concluidas\CAPControlCaja\bin\Release\SmoothProgressBar.dll
+E:\Users\B323463\Documents\Visual Studio 2015\Projects\03 - Concluidas\CAPControlCaja\bin\Release\QbosClient.dll
+E:\Users\B323463\Documents\Visual Studio 2015\Projects\03 - Concluidas\CAPControlCaja\obj\Release\CAPCajaLite.csprojResolveAssemblyReference.cache
+E:\Users\B323463\Documents\Visual Studio 2015\Projects\03 - Concluidas\CAPControlCaja\obj\Release\CAPCajaLite.dll
